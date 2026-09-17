@@ -1,0 +1,10 @@
+external_id: KB-GOV-001
+title: 基层公共服务示例考点
+document_type: exam_point
+exam_scope: [国考, 省考]
+source_url: null
+license_note: internally-authored-example
+effective_from: 2026-01-01
+tags: [公共管理, 基层治理, 公共服务]
+file: ../seed/kb-gov-001.md
+

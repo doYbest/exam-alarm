@@ -1,0 +1,15 @@
+.env
+backend/.env
+backend/.venv/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+**/__pycache__/
+**/*.pyc
+android/.gradle/
+android/local.properties
+android/**/build/
+*.apk
+.tools/
+.env.*
+!.env.example
