@@ -114,8 +114,8 @@ fun AlarmScreen(viewModel: AlarmViewModel = hiltViewModel()) {
     if (showEditor) AlarmEditor(
         initial = editing,
         onDismiss = { showEditor = false },
-        onSave = { hour, minute, mask, label, vibrate, snooze ->
-            viewModel.save(editing, hour, minute, mask, label, vibrate, snooze)
+        onSave = { hour, minute, mask, label, vibrate, snooze, brief, autoPlay ->
+            viewModel.save(editing, hour, minute, mask, label, vibrate, snooze, brief, autoPlay)
             showEditor = false
         },
     )
@@ -125,7 +125,7 @@ fun AlarmScreen(viewModel: AlarmViewModel = hiltViewModel()) {
 private fun AlarmEditor(
     initial: AlarmEntity?,
     onDismiss: () -> Unit,
-    onSave: (Int, Int, Int, String, Boolean, Int) -> Unit,
+    onSave: (Int, Int, Int, String, Boolean, Int, Boolean, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val now = java.time.LocalTime.now()
@@ -135,6 +135,8 @@ private fun AlarmEditor(
     var label by remember(initial) { mutableStateOf(initial?.label.orEmpty()) }
     var vibrate by remember(initial) { mutableStateOf(initial?.vibrate ?: true) }
     var snooze by remember(initial) { mutableIntStateOf(initial?.snoozeMinutes ?: 5) }
+    var morningBrief by remember(initial) { mutableStateOf(initial?.morningBriefEnabled ?: true) }
+    var autoPlay by remember(initial) { mutableStateOf(initial?.autoPlayBrief ?: true) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (initial == null) "添加闹钟" else "编辑闹钟") },
@@ -166,6 +168,22 @@ private fun AlarmEditor(
                     Text("震动")
                     Switch(checked = vibrate, onCheckedChange = { vibrate = it })
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("响铃后播放晨报")
+                    Switch(
+                        checked = morningBrief,
+                        onCheckedChange = {
+                            morningBrief = it
+                            if (!it) autoPlay = false
+                        },
+                    )
+                }
+                if (morningBrief) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("停止闹钟后自动播放")
+                        Switch(checked = autoPlay, onCheckedChange = { autoPlay = it })
+                    }
+                }
                 Text("稍后提醒")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(5, 10, 15).forEach { minutes ->
@@ -179,7 +197,9 @@ private fun AlarmEditor(
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(hour, minute, mask, label, vibrate, snooze) }) {
+            Button(onClick = {
+                onSave(hour, minute, mask, label, vibrate, snooze, morningBrief, autoPlay)
+            }) {
                 Text("保存")
             }
         },

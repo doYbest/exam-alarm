@@ -18,6 +18,15 @@ abstract class HotspotDao {
     @Query("SELECT * FROM sync_states WHERE resource = :resource")
     abstract suspend fun syncState(resource: String): SyncStateEntity?
 
+    @Query("SELECT * FROM cached_briefings WHERE date = :date AND timezone = :timezone LIMIT 1")
+    abstract suspend fun briefing(date: String, timezone: String): CachedBriefingEntity?
+
+    @Query("SELECT * FROM cached_briefings WHERE timezone = :timezone AND cachedAtEpochMillis >= :notBefore ORDER BY date DESC, cachedAtEpochMillis DESC LIMIT 1")
+    abstract suspend fun recentBriefing(timezone: String, notBefore: Long): CachedBriefingEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun upsertBriefing(item: CachedBriefingEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsertHotspots(items: List<CachedHotspotEntity>)
 

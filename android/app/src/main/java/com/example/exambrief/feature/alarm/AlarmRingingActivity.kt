@@ -22,10 +22,18 @@ class AlarmRingingActivity : ComponentActivity() {
         setTurnScreenOn(true)
         val id = intent.getStringExtra(AlarmRepository.EXTRA_ALARM_ID).orEmpty()
         val label = intent.getStringExtra(AlarmRingingService.EXTRA_LABEL).orEmpty().ifEmpty { "闹钟" }
+        val morningBriefEnabled = intent.getBooleanExtra(
+            AlarmRingingService.EXTRA_MORNING_BRIEF_ENABLED, false
+        )
         setContent {
             MaterialTheme {
-                RingingScreen(label, onStop = { act(id, AlarmRingingService.ACTION_STOP) },
-                    onSnooze = { act(id, AlarmRingingService.ACTION_SNOOZE) })
+                RingingScreen(
+                    label,
+                    morningBriefEnabled,
+                    onStop = { act(id, AlarmRingingService.ACTION_STOP) },
+                    onStopAndPlay = { act(id, AlarmRingingService.ACTION_STOP_AND_PLAY) },
+                    onSnooze = { act(id, AlarmRingingService.ACTION_SNOOZE) },
+                )
             }
         }
     }
@@ -40,7 +48,13 @@ class AlarmRingingActivity : ComponentActivity() {
 }
 
 @Composable
-private fun RingingScreen(label: String, onStop: () -> Unit, onSnooze: () -> Unit) {
+private fun RingingScreen(
+    label: String,
+    morningBriefEnabled: Boolean,
+    onStop: () -> Unit,
+    onStopAndPlay: () -> Unit,
+    onSnooze: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
@@ -48,6 +62,9 @@ private fun RingingScreen(label: String, onStop: () -> Unit, onSnooze: () -> Uni
     ) {
         Text(label, style = MaterialTheme.typography.headlineLarge)
         Button(onClick = onStop) { Text("停止") }
+        if (morningBriefEnabled) {
+            Button(onClick = onStopAndPlay) { Text("停止并播放晨报") }
+        }
         Button(onClick = onSnooze) { Text("稍后提醒") }
     }
 }

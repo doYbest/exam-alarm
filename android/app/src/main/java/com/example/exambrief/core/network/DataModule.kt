@@ -6,6 +6,7 @@ import com.example.exambrief.BuildConfig
 import com.example.exambrief.core.database.ExamBriefDatabase
 import com.example.exambrief.core.database.HotspotDao
 import com.example.exambrief.core.database.MIGRATION_1_2
+import com.example.exambrief.core.database.MIGRATION_2_3
 import com.example.exambrief.feature.alarm.AlarmDao
 import dagger.Module
 import dagger.Provides
@@ -24,7 +25,7 @@ object DataModule {
     @Singleton
     fun database(@ApplicationContext context: Context): ExamBriefDatabase =
         Room.databaseBuilder(context, ExamBriefDatabase::class.java, "exambrief.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides

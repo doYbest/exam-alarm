@@ -34,3 +34,18 @@ data class SyncStateEntity(
     val lastSuccessEpochMillis: Long?,
     val lastError: String?,
 )
+
+@Entity(tableName = "cached_briefings", primaryKeys = ["date", "timezone"])
+data class CachedBriefingEntity(
+    val date: String,
+    val timezone: String,
+    val id: String,
+    val version: Int,
+    val generatedAt: String,
+    val expiresAtEpochMillis: Long,
+    val introText: String,
+    val itemsJson: String,
+    val outroText: String,
+    val etag: String?,
+    val cachedAtEpochMillis: Long,
+)

@@ -2,8 +2,9 @@ package com.example.exambrief.feature.hotspot
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.exambrief.BuildConfig
 import com.example.exambrief.core.database.CachedHotspotEntity
+import com.example.exambrief.feature.briefing.BriefingContent
+import com.example.exambrief.feature.briefing.BriefingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalCoroutinesApi::class)
 class HotspotViewModel @Inject constructor(
     private val repository: HotspotRepository,
+    private val briefingRepository: BriefingRepository,
 ) : ViewModel() {
     private val today = LocalDate.now().toString()
     val day = MutableStateFlow(today)
@@ -35,25 +37,34 @@ class HotspotViewModel @Inject constructor(
     val detail = MutableStateFlow<DetailResult?>(null)
     val detailLoading = MutableStateFlow(false)
     val detailError = MutableStateFlow<String?>(null)
+    val briefing = MutableStateFlow<BriefingContent?>(null)
 
-    fun toggleDemo() {
-        if (!BuildConfig.DEBUG) return
-        day.value = if (day.value == today) "2026-09-16" else today
+    fun selectDay(selected: LocalDate) {
+        if (selected.isAfter(LocalDate.now())) return
+        day.value = selected.toString()
         refresh()
     }
 
     fun refresh() {
         viewModelScope.launch {
+            val selectedDay = day.value
             loading.value = true
             error.value = null
             try {
-                repository.refresh(day.value, timezone)
+                repository.refresh(selectedDay, timezone)
             } catch (cause: Exception) {
                 if (cause is CancellationException) throw cause
                 error.value = "同步失败，正在显示已缓存内容"
             } finally {
                 loading.value = false
             }
+            val selectedBriefing = try {
+                briefingRepository.refresh(selectedDay, timezone)
+            } catch (cause: Exception) {
+                if (cause is CancellationException) throw cause
+                briefingRepository.get(selectedDay, timezone)
+            }
+            if (day.value == selectedDay) briefing.value = selectedBriefing
         }
     }
 

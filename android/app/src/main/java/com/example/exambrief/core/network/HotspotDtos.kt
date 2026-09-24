@@ -59,3 +59,24 @@ data class HotspotDetailDto(
     val sources: List<SourceDto> = emptyList(),
 )
 
+@Serializable
+data class BriefingItemDto(
+    val position: Int,
+    @SerialName("hotspot_id") val hotspotId: String,
+    val title: String,
+    @SerialName("tts_text") val ttsText: String,
+    @SerialName("estimated_seconds") val estimatedSeconds: Int,
+)
+
+@Serializable
+data class BriefingDto(
+    val id: String,
+    val date: String,
+    val timezone: String,
+    val version: Int,
+    @SerialName("generated_at") val generatedAt: String,
+    @SerialName("expires_at") val expiresAt: String,
+    @SerialName("intro_text") val introText: String,
+    val items: List<BriefingItemDto>,
+    @SerialName("outro_text") val outroText: String,
+)

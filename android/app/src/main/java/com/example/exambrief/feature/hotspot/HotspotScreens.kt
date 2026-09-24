@@ -3,18 +3,23 @@ package com.example.exambrief.feature.hotspot
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,12 +27,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.exambrief.BuildConfig
 import com.example.exambrief.core.database.CachedHotspotEntity
+import com.example.exambrief.feature.briefing.BriefingPlaybackService
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun HotspotHomeScreen(
@@ -38,6 +49,11 @@ fun HotspotHomeScreen(
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
     val day by viewModel.day.collectAsState()
+    val briefing by viewModel.briefing.collectAsState()
+    val context = LocalContext.current
+    var visibleMonth by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(YearMonth.from(LocalDate.now()))
+    }
     LaunchedEffect(viewModel) { viewModel.refresh() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -46,13 +62,41 @@ fun HotspotHomeScreen(
     ) {
         item {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("时事热点", style = MaterialTheme.typography.headlineSmall)
+                Text("公考晨报", style = MaterialTheme.typography.headlineSmall)
                 Button(onClick = viewModel::refresh) { Text("刷新") }
             }
-            Text(day, style = MaterialTheme.typography.bodySmall)
-            if (BuildConfig.DEBUG) {
-                Button(onClick = viewModel::toggleDemo) {
-                    Text(if (day == "2026-09-16") "返回今日" else "查看 9 月 16 日演示热点")
+        }
+        item {
+            MonthCalendar(
+                month = visibleMonth,
+                selected = LocalDate.parse(day),
+                onPreviousMonth = { visibleMonth = visibleMonth.minusMonths(1) },
+                onNextMonth = {
+                    val next = visibleMonth.plusMonths(1)
+                    if (!next.isAfter(YearMonth.from(LocalDate.now()))) visibleMonth = next
+                },
+                onSelect = viewModel::selectDay,
+            )
+        }
+        item {
+            val selectedDate = LocalDate.parse(day)
+            Text(
+                if (selectedDate == LocalDate.now()) "今日推荐" else
+                    selectedDate.format(DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)) + "回顾",
+                style = MaterialTheme.typography.titleLarge,
+            )
+            briefing?.let { content ->
+                Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text("当日晨报 · ${content.items.size} 条", style = MaterialTheme.typography.titleMedium)
+                        Text(content.introText, style = MaterialTheme.typography.bodyMedium)
+                        if (selectedDate == LocalDate.now()) {
+                            Button(onClick = { context.playBriefing() }) { Text("播放晨报") }
+                        }
+                    }
                 }
             }
         }
@@ -68,6 +112,86 @@ fun HotspotHomeScreen(
         if (other.isNotEmpty()) item { Text("其他值得关注", style = MaterialTheme.typography.titleLarge) }
         items(other, key = { "other:${it.id}" }) { item -> HotspotCard(item, onOpen) }
     }
+}
+
+@Composable
+private fun MonthCalendar(
+    month: YearMonth,
+    selected: LocalDate,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onSelect: (LocalDate) -> Unit,
+) {
+    val today = LocalDate.now()
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(onClick = onPreviousMonth) { Text("‹") }
+                Text(
+                    month.atDay(1).format(DateTimeFormatter.ofPattern("yyyy年 M月", Locale.CHINA)),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                OutlinedButton(
+                    onClick = onNextMonth,
+                    enabled = month < YearMonth.from(today),
+                ) { Text("›") }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                listOf("一", "二", "三", "四", "五", "六", "日").forEach {
+                    Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.Center) {
+                        Text(it, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+            val firstOffset = month.atDay(1).dayOfWeek.value - 1
+            val cells = firstOffset + month.lengthOfMonth()
+            repeat((cells + 6) / 7) { week ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    repeat(7) { weekday ->
+                        val dayNumber = week * 7 + weekday - firstOffset + 1
+                        if (dayNumber !in 1..month.lengthOfMonth()) {
+                            Box(modifier = Modifier.size(40.dp))
+                        } else {
+                            val date = month.atDay(dayNumber)
+                            val enabled = !date.isAfter(today)
+                            val chosen = date == selected
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clickable(enabled = enabled) { onSelect(date) },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    dayNumber.toString(),
+                                    color = when {
+                                        chosen -> MaterialTheme.colorScheme.primary
+                                        enabled -> MaterialTheme.colorScheme.onSurface
+                                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                    },
+                                    style = if (chosen) MaterialTheme.typography.titleMedium
+                                        else MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun Context.playBriefing() {
+    startForegroundService(
+        Intent(this, BriefingPlaybackService::class.java)
+            .setAction(BriefingPlaybackService.ACTION_PLAY)
+    )
 }
 
 @Composable

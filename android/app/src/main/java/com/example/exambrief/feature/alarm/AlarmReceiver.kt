@@ -30,6 +30,11 @@ class AlarmReceiver : BroadcastReceiver() {
                                 putExtra(AlarmRepository.EXTRA_ALARM_ID, alarm.id)
                                 putExtra(AlarmRingingService.EXTRA_LABEL, alarm.label)
                                 putExtra(AlarmRingingService.EXTRA_VIBRATE, alarm.vibrate)
+                                putExtra(
+                                    AlarmRingingService.EXTRA_MORNING_BRIEF_ENABLED,
+                                    alarm.morningBriefEnabled,
+                                )
+                                putExtra(AlarmRingingService.EXTRA_AUTO_PLAY_BRIEF, alarm.autoPlayBrief)
                             }
                         )
                     }

@@ -26,3 +26,24 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS cached_briefings (
+                date TEXT NOT NULL,
+                timezone TEXT NOT NULL,
+                id TEXT NOT NULL,
+                version INTEGER NOT NULL,
+                generatedAt TEXT NOT NULL,
+                expiresAtEpochMillis INTEGER NOT NULL,
+                introText TEXT NOT NULL,
+                itemsJson TEXT NOT NULL,
+                outroText TEXT NOT NULL,
+                etag TEXT,
+                cachedAtEpochMillis INTEGER NOT NULL,
+                PRIMARY KEY(date, timezone)
+            )""".trimIndent()
+        )
+    }
+}

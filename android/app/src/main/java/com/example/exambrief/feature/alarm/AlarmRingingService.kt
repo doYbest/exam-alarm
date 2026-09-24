@@ -16,6 +16,7 @@ import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.example.exambrief.feature.briefing.BriefingPlaybackService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -31,12 +32,15 @@ class AlarmRingingService : Service() {
     private var ringtone: Ringtone? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentId: String? = null
+    private var morningBriefEnabled = false
+    private var autoPlayBrief = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> stopRinging()
+            ACTION_STOP -> stopRinging(playBrief = autoPlayBrief)
+            ACTION_STOP_AND_PLAY -> stopRinging(playBrief = morningBriefEnabled)
             ACTION_SNOOZE -> {
                 val id = currentId ?: intent.getStringExtra(AlarmRepository.EXTRA_ALARM_ID)
                 scope.launch {
@@ -52,6 +56,8 @@ class AlarmRingingService : Service() {
                 if (currentId == id) return START_NOT_STICKY
                 stopSound()
                 currentId = id
+                morningBriefEnabled = intent.getBooleanExtra(EXTRA_MORNING_BRIEF_ENABLED, false)
+                autoPlayBrief = intent.getBooleanExtra(EXTRA_AUTO_PLAY_BRIEF, false)
                 createChannel()
                 val label = intent.getStringExtra(EXTRA_LABEL).orEmpty().ifEmpty { "闹钟" }
                 startForeground(NOTIFICATION_ID, notification(id, label))
@@ -90,6 +96,8 @@ class AlarmRingingService : Service() {
                 data = Uri.parse("exambrief://alarm/ringing/$id")
                 putExtra(AlarmRepository.EXTRA_ALARM_ID, id)
                 putExtra(EXTRA_LABEL, label)
+                putExtra(EXTRA_MORNING_BRIEF_ENABLED, morningBriefEnabled)
+                putExtra(EXTRA_AUTO_PLAY_BRIEF, autoPlayBrief)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -104,6 +112,11 @@ class AlarmRingingService : Service() {
             .setContentIntent(show)
             .setFullScreenIntent(show, true)
             .addAction(0, "停止", actionIntent(id, ACTION_STOP))
+            .apply {
+                if (morningBriefEnabled && !autoPlayBrief) {
+                    addAction(0, "停止并播报", actionIntent(id, ACTION_STOP_AND_PLAY))
+                }
+            }
             .addAction(0, "稍后提醒", actionIntent(id, ACTION_SNOOZE))
             .build()
     }
@@ -138,10 +151,16 @@ class AlarmRingingService : Service() {
         wakeLock = null
     }
 
-    private fun stopRinging() {
+    private fun stopRinging(playBrief: Boolean = false) {
         stopSound()
         currentId = null
         stopForeground(STOP_FOREGROUND_REMOVE)
+        if (playBrief) {
+            startForegroundService(
+                Intent(this, BriefingPlaybackService::class.java)
+                    .setAction(BriefingPlaybackService.ACTION_PLAY)
+            )
+        }
         stopSelf()
     }
 
@@ -155,8 +174,11 @@ class AlarmRingingService : Service() {
         const val ACTION_RING = "com.example.exambrief.alarm.RING"
         const val ACTION_STOP = "com.example.exambrief.alarm.STOP"
         const val ACTION_SNOOZE = "com.example.exambrief.alarm.SNOOZE"
+        const val ACTION_STOP_AND_PLAY = "com.example.exambrief.alarm.STOP_AND_PLAY"
         const val EXTRA_LABEL = "label"
         const val EXTRA_VIBRATE = "vibrate"
+        const val EXTRA_MORNING_BRIEF_ENABLED = "morning_brief_enabled"
+        const val EXTRA_AUTO_PLAY_BRIEF = "auto_play_brief"
         private const val CHANNEL_ID = "alarm_ringing"
         private const val NOTIFICATION_ID = 201
     }

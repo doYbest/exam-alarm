@@ -21,9 +21,11 @@ class AlarmViewModel @Inject constructor(
     fun save(
         existing: AlarmEntity?, hour: Int, minute: Int, repeatDaysMask: Int,
         label: String, vibrate: Boolean, snoozeMinutes: Int,
+        morningBriefEnabled: Boolean, autoPlayBrief: Boolean,
     ) = viewModelScope.launch {
         val scheduled = repository.save(
-            existing, hour, minute, repeatDaysMask, label, vibrate, snoozeMinutes
+            existing, hour, minute, repeatDaysMask, label, vibrate, snoozeMinutes,
+            morningBriefEnabled, autoPlayBrief,
         )
         message.value = if (scheduled) "闹钟已保存" else "闹钟已保存，请授权精确闹钟后点击刷新权限"
         canSchedule.value = repository.canSchedule()

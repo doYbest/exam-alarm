@@ -36,6 +36,8 @@ class AlarmRepository @Inject constructor(
         label: String,
         vibrate: Boolean,
         snoozeMinutes: Int,
+        morningBriefEnabled: Boolean,
+        autoPlayBrief: Boolean,
     ): Boolean {
         require(hour in 0..23 && minute in 0..59)
         val now = System.currentTimeMillis()
@@ -50,8 +52,8 @@ class AlarmRepository @Inject constructor(
             soundUri = existing?.soundUri,
             vibrate = vibrate,
             snoozeMinutes = snoozeMinutes.coerceIn(1, 30),
-            morningBriefEnabled = existing?.morningBriefEnabled ?: false,
-            autoPlayBrief = existing?.autoPlayBrief ?: false,
+            morningBriefEnabled = morningBriefEnabled,
+            autoPlayBrief = morningBriefEnabled && autoPlayBrief,
             nextTriggerAtEpochMillis = null,
             createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
             updatedAtEpochMillis = now,

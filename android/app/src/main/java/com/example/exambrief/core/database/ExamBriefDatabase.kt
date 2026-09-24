@@ -6,8 +6,8 @@ import com.example.exambrief.feature.alarm.AlarmDao
 import com.example.exambrief.feature.alarm.AlarmEntity
 
 @Database(
-    entities = [CachedHotspotEntity::class, CachedHotspotDetailEntity::class, SyncStateEntity::class, AlarmEntity::class],
-    version = 2,
+    entities = [CachedHotspotEntity::class, CachedHotspotDetailEntity::class, SyncStateEntity::class, CachedBriefingEntity::class, AlarmEntity::class],
+    version = 3,
     exportSchema = true,
 )
 abstract class ExamBriefDatabase : RoomDatabase() {

@@ -21,4 +21,12 @@ interface HotspotApi {
         @Path("id") id: String,
         @Header("If-None-Match") etag: String? = null,
     ): Response<ResponseBody>
+
+    @GET("v1/briefings/today")
+    suspend fun briefing(
+        @Query("date") date: String,
+        @Query("timezone") timezone: String,
+        @Query("locale") locale: String = "zh-CN",
+        @Header("If-None-Match") etag: String? = null,
+    ): Response<ResponseBody>
 }
