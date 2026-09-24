@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.exambrief.BuildConfig
 import com.example.exambrief.core.database.CachedHotspotEntity
 
 @Composable
@@ -36,6 +37,7 @@ fun HotspotHomeScreen(
     val cached by viewModel.items.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val day by viewModel.day.collectAsState()
     LaunchedEffect(viewModel) { viewModel.refresh() }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -44,14 +46,21 @@ fun HotspotHomeScreen(
     ) {
         item {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("今日热点", style = MaterialTheme.typography.headlineSmall)
+                Text("时事热点", style = MaterialTheme.typography.headlineSmall)
                 Button(onClick = viewModel::refresh) { Text("刷新") }
             }
-            Text(viewModel.day, style = MaterialTheme.typography.bodySmall)
+            Text(day, style = MaterialTheme.typography.bodySmall)
+            if (BuildConfig.DEBUG) {
+                Button(onClick = viewModel::toggleDemo) {
+                    Text(if (day == "2026-09-16") "返回今日" else "查看 9 月 16 日演示热点")
+                }
+            }
         }
         if (loading) item { CircularProgressIndicator() }
         if (error != null) item { Text(error.orEmpty(), color = MaterialTheme.colorScheme.error) }
-        if (!loading && cached.isEmpty()) item { Text("今日暂无热点。联网后可重试。") }
+        if (!loading && cached.isEmpty()) item {
+            Text(if (error == null) "所选日期暂无热点" else "暂无缓存内容，请稍后重试")
+        }
         val core = cached.filter { it.importance == "core" }
         val other = cached.filter { it.importance != "core" }
         if (core.isNotEmpty()) item { Text("今日重点", style = MaterialTheme.typography.titleLarge) }

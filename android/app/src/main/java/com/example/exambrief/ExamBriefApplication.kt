@@ -9,13 +9,21 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.exambrief.feature.hotspot.HotspotSyncWorker
+import com.example.exambrief.feature.alarm.AlarmRepository
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class ExamBriefApplication : Application() {
+    @Inject lateinit var alarms: AlarmRepository
+
     override fun onCreate() {
         super.onCreate()
+        CoroutineScope(Dispatchers.IO).launch { alarms.rescheduleAll() }
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()

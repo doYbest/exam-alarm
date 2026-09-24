@@ -32,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.exambrief.feature.hotspot.HotspotDetailScreen
 import com.example.exambrief.feature.hotspot.HotspotHomeScreen
+import com.example.exambrief.feature.alarm.AlarmScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -90,7 +91,7 @@ private fun AppNavigation() {
             composable("detail/{id}") { backStack ->
                 HotspotDetailScreen(id = backStack.arguments?.getString("id").orEmpty())
             }
-            composable("alarm") { UnavailableScreen("闹钟功能正在开发") }
+            composable("alarm") { AlarmScreen() }
             composable("study") { UnavailableScreen("学习功能正在开发") }
             composable("mine") {
                 if (BuildConfig.DEBUG) HealthScreen() else UnavailableScreen("设置功能正在开发")
@@ -135,4 +136,3 @@ private fun HealthScreen() {
         Button(onClick = { refresh++ }) { Text("重新检查") }
     }
 }
-
